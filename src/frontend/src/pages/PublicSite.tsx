@@ -29,12 +29,14 @@ import {
   Linkedin,
   Mail,
   MapPin,
+  Menu,
   Phone,
   Search,
   Shield,
   Target,
   TrendingUp,
   Users,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -72,7 +74,7 @@ function Navbar() {
             <img
               src="/assets/uploads/Apex-HR-Solutions-logo-design-1.png"
               alt="Apex HR Solutions"
-              className="h-10 md:h-12 w-auto object-contain"
+              className={`h-10 md:h-12 w-auto object-contain transition-all ${!scrolled ? "brightness-0 invert" : ""}`}
             />
           </div>
 
@@ -120,14 +122,26 @@ function Navbar() {
             </button>
           </nav>
 
-          {/* Login Button */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Portal Buttons */}
+          <div className="hidden md:flex items-center gap-2">
             <Button
-              data-ocid="nav.hr_login_button"
-              onClick={() => navigate("/login")}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md px-5"
+              data-ocid="nav.employee_portal_button"
+              variant="outline"
+              onClick={() => navigate("/portal/employee")}
+              className={`px-4 text-sm font-medium transition-all ${
+                scrolled
+                  ? "border-primary/40 text-primary hover:bg-primary/5"
+                  : "border-white/50 text-white hover:bg-white/10 hover:border-white"
+              }`}
             >
-              HR Login
+              Employee Portal
+            </Button>
+            <Button
+              data-ocid="nav.hr_portal_button"
+              onClick={() => navigate("/portal/hr")}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md px-4 text-sm"
+            >
+              HR Portal
             </Button>
           </div>
 
@@ -138,15 +152,15 @@ function Navbar() {
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle menu"
           >
-            <div
-              className={`w-5 h-0.5 mb-1 transition-all ${scrolled ? "bg-foreground" : "bg-white"}`}
-            />
-            <div
-              className={`w-5 h-0.5 mb-1 transition-all ${scrolled ? "bg-foreground" : "bg-white"}`}
-            />
-            <div
-              className={`w-5 h-0.5 transition-all ${scrolled ? "bg-foreground" : "bg-white"}`}
-            />
+            {menuOpen ? (
+              <X
+                className={`w-5 h-5 ${scrolled ? "text-foreground" : "text-white"}`}
+              />
+            ) : (
+              <Menu
+                className={`w-5 h-5 ${scrolled ? "text-foreground" : "text-white"}`}
+              />
+            )}
           </button>
         </div>
 
@@ -194,11 +208,19 @@ function Navbar() {
               Contact
             </button>
             <Button
-              onClick={() => navigate("/login")}
-              className="w-full mt-2"
-              data-ocid="nav.hr_login_button"
+              variant="outline"
+              onClick={() => navigate("/portal/employee")}
+              className="w-full mt-2 border-primary/40 text-primary hover:bg-primary/5"
+              data-ocid="nav.employee_portal_button"
             >
-              HR Login
+              Employee Portal
+            </Button>
+            <Button
+              onClick={() => navigate("/portal/hr")}
+              className="w-full"
+              data-ocid="nav.hr_portal_button"
+            >
+              HR Portal
             </Button>
           </div>
         )}

@@ -8,34 +8,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import {
   AlertCircle,
   ArrowLeft,
   Building2,
-  Eye,
   Loader2,
   ShieldCheck,
-  Users,
+  XCircle,
 } from "lucide-react";
 import { useEffect } from "react";
 
 export default function LoginPage() {
   const { navigate } = useRouter();
   const { isAuthenticated, isAdmin, isInitializing, refetchRole } = useAuth();
-  const { login, isLoggingIn, isLoginError, loginError, loginStatus } =
+  const { login, clear, isLoggingIn, isLoginError, loginError, loginStatus } =
     useInternetIdentity();
 
-  // Redirect after successful authentication
+  // Redirect only HR admins; non-admins stay on this page and see access denied
   useEffect(() => {
-    if (!isInitializing && isAuthenticated) {
-      if (isAdmin) {
-        navigate("/dashboard/hr");
-      } else {
-        navigate("/dashboard/employee");
-      }
+    if (!isInitializing && isAuthenticated && isAdmin) {
+      navigate("/dashboard/hr");
     }
   }, [isAuthenticated, isAdmin, isInitializing, navigate]);
 
@@ -88,107 +82,131 @@ export default function LoginPage() {
               <ShieldCheck className="w-7 h-7 text-primary" />
             </div>
             <CardTitle className="font-display text-2xl text-foreground">
-              Secure Portal Login
+              HR Admin Portal
             </CardTitle>
             <CardDescription className="text-base mt-1">
-              Sign in with Internet Identity to access the HR portal
+              Secure access for HR administrators only
             </CardDescription>
           </CardHeader>
 
           <CardContent className="px-8 pb-8 pt-6">
-            {/* Error state */}
-            {isLoginError && (
-              <Alert
+            {/* Access Denied state -- authenticated but not HR admin */}
+            {!isInitializing && isAuthenticated && !isAdmin ? (
+              <div
                 data-ocid="login.error_state"
-                variant="destructive"
-                className="mb-6"
+                className="flex flex-col items-center gap-4 py-4"
               >
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  {loginError?.message ?? "Login failed. Please try again."}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Loading state while initializing */}
-            {isInitializing ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <span className="ml-2 text-muted-foreground text-sm">
-                  Loading...
-                </span>
+                <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <XCircle className="w-7 h-7 text-destructive" />
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-foreground">Access Denied</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This portal is restricted to HR administrators only.
+                  </p>
+                </div>
+                <Button
+                  data-ocid="login.cancel_button"
+                  variant="outline"
+                  className="w-full mt-2"
+                  onClick={() => {
+                    clear();
+                    navigate("/");
+                  }}
+                >
+                  <ArrowLeft className="mr-2 w-4 h-4" />
+                  Back to Website
+                </Button>
+                <p className="text-xs text-center text-muted-foreground leading-relaxed">
+                  Looking for the{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clear();
+                      navigate("/portal/employee");
+                    }}
+                    className="text-primary underline hover:no-underline"
+                  >
+                    Employee Portal
+                  </button>
+                  ?
+                </p>
               </div>
             ) : (
               <>
-                {/* Login Button */}
-                <Button
-                  data-ocid="login.submit_button"
-                  onClick={login}
-                  disabled={isLoggingIn}
-                  className="w-full h-12 text-base font-semibold shadow-md"
-                >
-                  {isLoggingIn ? (
-                    <>
-                      <Loader2 className="mr-2 w-4 h-4 animate-spin" />
-                      Connecting...
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck className="mr-2 w-4 h-4" />
-                      Login with Internet Identity
-                    </>
-                  )}
-                </Button>
+                {/* Login error */}
+                {isLoginError && (
+                  <Alert
+                    data-ocid="login.error_state"
+                    variant="destructive"
+                    className="mb-6"
+                  >
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {loginError?.message ?? "Login failed. Please try again."}
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-                <div className="mt-6 space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Building2 className="w-4 h-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">
-                        HR Administrator
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Full portal access
-                      </p>
-                    </div>
+                {/* Loading state while initializing */}
+                {isInitializing ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    <span className="ml-2 text-muted-foreground text-sm">
+                      Loading...
+                    </span>
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Users className="w-4 h-4 text-primary" />
+                ) : (
+                  <>
+                    {/* Login Button */}
+                    <Button
+                      data-ocid="login.submit_button"
+                      onClick={login}
+                      disabled={isLoggingIn}
+                      className="w-full h-12 text-base font-semibold shadow-md"
+                    >
+                      {isLoggingIn ? (
+                        <>
+                          <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                          Connecting...
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="mr-2 w-4 h-4" />
+                          Login with Internet Identity
+                        </>
+                      )}
+                    </Button>
+
+                    <div className="mt-6">
+                      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Building2 className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">
+                            HR Administrator Access
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Full employee management, payroll & leave control
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">
-                        Employee
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Self-service dashboard
-                      </p>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="relative my-6">
-                  <Separator />
-                  <span className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 top-1/2 bg-white px-3 text-xs text-muted-foreground">
-                    or
-                  </span>
-                </div>
-
-                <Button
-                  data-ocid="login.guest_button"
-                  variant="outline"
-                  className="w-full h-11"
-                  onClick={() => navigate("/dashboard/employee")}
-                >
-                  <Eye className="mr-2 w-4 h-4" />
-                  Continue as Guest
-                </Button>
-
-                <p className="text-xs text-center text-muted-foreground mt-3 leading-relaxed">
-                  View your salary and payslip without logging in
-                </p>
+                    <p className="text-xs text-center text-muted-foreground mt-5 leading-relaxed">
+                      Looking for the{" "}
+                      <button
+                        type="button"
+                        onClick={() => navigate("/portal/employee")}
+                        className="text-primary underline hover:no-underline"
+                      >
+                        Employee Portal
+                      </button>
+                      ?
+                    </p>
+                  </>
+                )}
               </>
             )}
           </CardContent>

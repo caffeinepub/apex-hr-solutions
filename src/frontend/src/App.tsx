@@ -1,5 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { AuthProvider } from "@/hooks/useAuth";
 import EmployeeDashboard from "@/pages/EmployeeDashboard";
 import HRDashboard from "@/pages/HRDashboard";
 import LoginPage from "@/pages/LoginPage";
@@ -8,7 +8,13 @@ import { type ReactNode, createContext, useContext, useState } from "react";
 
 // ─── Simple hash router ───────────────────────────────────────────────────────
 
-type Route = "/" | "/login" | "/dashboard/hr" | "/dashboard/employee";
+type Route =
+  | "/"
+  | "/login"
+  | "/portal/hr"
+  | "/portal/employee"
+  | "/dashboard/hr"
+  | "/dashboard/employee";
 
 interface RouterContextValue {
   route: Route;
@@ -30,6 +36,8 @@ function RouterProvider({ children }: { children: ReactNode }) {
     const validRoutes: Route[] = [
       "/",
       "/login",
+      "/portal/hr",
+      "/portal/employee",
       "/dashboard/hr",
       "/dashboard/employee",
     ];
@@ -50,60 +58,26 @@ function RouterProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ─── Protected route ──────────────────────────────────────────────────────────
-
-function ProtectedRoute({
-  children,
-  requireAdmin = false,
-}: {
-  children: ReactNode;
-  requireAdmin?: boolean;
-}) {
-  const { isAuthenticated, isAdmin, isInitializing } = useAuth();
-  const { navigate } = useRouter();
-
-  if (isInitializing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
-          <p className="text-muted-foreground text-sm font-medium">
-            Loading...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    navigate("/login");
-    return null;
-  }
-
-  if (requireAdmin && !isAdmin) {
-    navigate("/dashboard/employee");
-    return null;
-  }
-
-  return <>{children}</>;
-}
-
 // ─── Routes ────────────────────────────────────────────────────────────────────
 
 function Routes() {
   const { route } = useRouter();
 
+  // /login still renders the login page for direct access
   if (route === "/login") return <LoginPage />;
-  if (route === "/dashboard/hr") {
-    return (
-      <ProtectedRoute requireAdmin>
-        <HRDashboard />
-      </ProtectedRoute>
-    );
-  }
-  if (route === "/dashboard/employee") {
+
+  // /portal/hr goes directly to the HR dashboard (open access)
+  if (route === "/portal/hr") return <HRDashboard />;
+
+  // /portal/employee and /dashboard/employee both render the employee dashboard
+  if (route === "/portal/employee" || route === "/dashboard/employee") {
     return <EmployeeDashboard />;
   }
+
+  if (route === "/dashboard/hr") {
+    return <HRDashboard />;
+  }
+
   return <PublicSite />;
 }
 

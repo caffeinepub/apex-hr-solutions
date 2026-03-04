@@ -40,6 +40,7 @@ import {
 } from "@/utils/format";
 import {
   AlertCircle,
+  ArrowLeft,
   Briefcase,
   Building2,
   CalendarCheck,
@@ -837,7 +838,7 @@ function GuestLookupForm({ onResolve }: { onResolve: (id: string) => void }) {
           onClick={() => navigate("/")}
           className="flex items-center gap-2 text-white/70 hover:text-white text-sm mb-6 transition-colors"
         >
-          <X className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" />
           Back to website
         </button>
 
@@ -1083,9 +1084,21 @@ export default function EmployeeDashboard() {
               </p>
             </div>
           </div>
-          <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
-            Employee
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
+              Employee
+            </Badge>
+            <Button
+              data-ocid="emp.exit_button"
+              variant="outline"
+              size="sm"
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+              onClick={() => navigate("/")}
+            >
+              <LogOut className="w-4 h-4 mr-1.5" />
+              Exit
+            </Button>
+          </div>
         </header>
 
         {/* Content */}

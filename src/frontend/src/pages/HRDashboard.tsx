@@ -26,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -78,7 +77,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Employee, LeaveRequest } from "../backend.d";
 import { LeaveStatus } from "../backend.d";
@@ -137,6 +136,11 @@ function EmployeeDialog({
 }: EmployeeDialogProps) {
   const [form, setForm] = useState<Employee>(initial ?? EMPTY_EMPLOYEE);
   const addEmployee = useAddEmployee();
+
+  // Reset form when initial employee changes (triggered by open/close via parent key prop)
+  useEffect(() => {
+    setForm(initial ?? EMPTY_EMPLOYEE);
+  }, [initial]);
   const updateEmployee = useUpdateEmployee();
 
   const set = (field: keyof Employee, value: string | number | bigint) => {
@@ -313,7 +317,7 @@ function EmployeeDialog({
 
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
 
-function OverviewTab() {
+function OverviewTab({ onAddEmployee }: { onAddEmployee?: () => void }) {
   const { data: employees = [], isLoading: loadingEmp } = useAllEmployees();
   const { data: leaves = [], isLoading: loadingLeaves } = useAllLeaves();
 
@@ -383,10 +387,24 @@ function OverviewTab() {
       {/* Recent employees */}
       <Card className="border border-border">
         <CardHeader>
-          <CardTitle className="font-display text-lg">
-            Recent Employees
-          </CardTitle>
-          <CardDescription>Last 5 added employees</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="font-display text-lg">
+                Recent Employees
+              </CardTitle>
+              <CardDescription>Last 5 added employees</CardDescription>
+            </div>
+            {onAddEmployee && (
+              <Button
+                data-ocid="hr.overview_add_employee_button"
+                size="sm"
+                onClick={onAddEmployee}
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                Add Employee
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {loadingEmp ? (
@@ -437,12 +455,40 @@ function OverviewTab() {
 
 // ─── Employees Tab ────────────────────────────────────────────────────────────
 
-function EmployeesTab() {
+interface EmployeesTabProps {
+  externalDialogOpen?: boolean;
+  externalEditEmployee?: Employee | null;
+  onExternalDialogClose?: () => void;
+}
+
+function EmployeesTab({
+  externalDialogOpen,
+  externalEditEmployee,
+  onExternalDialogClose,
+}: EmployeesTabProps) {
   const { data: employees = [], isLoading } = useAllEmployees();
   const deleteEmployee = useDeleteEmployee();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
+  const [localDialogOpen, setLocalDialogOpen] = useState(false);
+  const [localEditEmployee, setLocalEditEmployee] = useState<Employee | null>(
+    null,
+  );
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  // Merge external and local dialog state:
+  // External takes priority when it's explicitly true
+  const dialogOpen = externalDialogOpen === true ? true : localDialogOpen;
+  const editEmployee =
+    externalDialogOpen === true
+      ? (externalEditEmployee ?? null)
+      : localEditEmployee;
+
+  const handleDialogClose = () => {
+    if (externalDialogOpen === true && onExternalDialogClose) {
+      onExternalDialogClose();
+    }
+    setLocalDialogOpen(false);
+    setLocalEditEmployee(null);
+  };
   const [search, setSearch] = useState("");
 
   const filtered = employees.filter(
@@ -474,8 +520,8 @@ function EmployeesTab() {
         <Button
           data-ocid="hr.add_employee_button"
           onClick={() => {
-            setEditEmployee(null);
-            setDialogOpen(true);
+            setLocalEditEmployee(null);
+            setLocalDialogOpen(true);
           }}
           className="flex-shrink-0"
         >
@@ -510,7 +556,9 @@ function EmployeesTab() {
                   {filtered.map((emp, idx) => (
                     <TableRow key={emp.employeeId}>
                       <TableCell className="text-xs text-muted-foreground font-mono">
-                        {emp.employeeId.slice(0, 12)}...
+                        {emp.employeeId.length > 20
+                          ? `${emp.employeeId.slice(0, 18)}…`
+                          : emp.employeeId}
                       </TableCell>
                       <TableCell className="font-medium">{emp.name}</TableCell>
                       <TableCell>{emp.department}</TableCell>
@@ -533,8 +581,8 @@ function EmployeesTab() {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => {
-                              setEditEmployee(emp);
-                              setDialogOpen(true);
+                              setLocalEditEmployee(emp);
+                              setLocalDialogOpen(true);
                             }}
                           >
                             <Pencil className="w-3.5 h-3.5" />
@@ -575,10 +623,7 @@ function EmployeesTab() {
       {dialogOpen && (
         <EmployeeDialog
           open={dialogOpen}
-          onClose={() => {
-            setDialogOpen(false);
-            setEditEmployee(null);
-          }}
+          onClose={handleDialogClose}
           initial={editEmployee ?? undefined}
           isEdit={!!editEmployee}
         />
@@ -673,7 +718,13 @@ function LeaveManagementTab() {
             className="capitalize"
           >
             {f}
-            <span className="ml-2 bg-white/20 rounded-full px-1.5 text-xs">
+            <span
+              className={`ml-2 rounded-full px-1.5 text-xs ${
+                filter === f
+                  ? "bg-white/20 text-white"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
               {f === "all"
                 ? leaves.length
                 : leaves.filter((l) => l.status === f).length}
@@ -1005,13 +1056,23 @@ function ContactSubmissionsTab() {
 
 export default function HRDashboard() {
   const { navigate } = useRouter();
-  const { logout, userProfile } = useAuth();
+  const { logout, userProfile, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Lifted state for cross-tab "Add Employee" action from Overview
+  const [employeeDialogOpen, setEmployeeDialogOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const handleAddEmployeeFromOverview = () => {
+    setActiveTab("employees");
+    setEditingEmployee(null);
+    setEmployeeDialogOpen(true);
   };
 
   const navItems = [
@@ -1104,14 +1165,16 @@ export default function HRDashboard() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground transition-all"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          )}
         </div>
       </aside>
 
@@ -1151,15 +1214,38 @@ export default function HRDashboard() {
               </p>
             </div>
           </div>
-          <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
-            HR Admin
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
+              HR Admin
+            </Badge>
+            <Button
+              data-ocid="hr.exit_button"
+              variant="outline"
+              size="sm"
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+              onClick={() => navigate("/")}
+            >
+              <LogOut className="w-4 h-4 mr-1.5" />
+              Exit
+            </Button>
+          </div>
         </header>
 
         {/* Tab Content */}
         <main className="flex-1 p-4 md:p-6 lg:p-8">
-          {activeTab === "overview" && <OverviewTab />}
-          {activeTab === "employees" && <EmployeesTab />}
+          {activeTab === "overview" && (
+            <OverviewTab onAddEmployee={handleAddEmployeeFromOverview} />
+          )}
+          {activeTab === "employees" && (
+            <EmployeesTab
+              externalDialogOpen={employeeDialogOpen}
+              externalEditEmployee={editingEmployee}
+              onExternalDialogClose={() => {
+                setEmployeeDialogOpen(false);
+                setEditingEmployee(null);
+              }}
+            />
+          )}
           {activeTab === "leaves" && <LeaveManagementTab />}
           {activeTab === "salary" && <SalaryTab />}
           {activeTab === "contacts" && <ContactSubmissionsTab />}
