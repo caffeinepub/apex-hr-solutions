@@ -49,6 +49,8 @@ import {
   Clock,
   FileText,
   IndianRupee,
+  Info,
+  LogIn,
   LogOut,
   Mail,
   Menu,
@@ -61,6 +63,24 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { LeaveStatus } from "../backend.d";
 import type { LeaveRequest } from "../backend.d";
+
+// ─── Leave Login Button (used in LeaveTab alert) ─────────────────────────────
+
+function LeaveLoginButton() {
+  const { navigate } = useRouter();
+  return (
+    <Button
+      data-ocid="emp.leave_login_button"
+      size="sm"
+      variant="outline"
+      className="border-primary text-primary hover:bg-primary/5 flex-shrink-0"
+      onClick={() => navigate("/login")}
+    >
+      <LogIn className="w-3.5 h-3.5 mr-1.5" />
+      Login
+    </Button>
+  );
+}
 
 // ─── Leave Status Badge ───────────────────────────────────────────────────────
 
@@ -345,7 +365,12 @@ function SalaryTab({ employeeId }: { employeeId: string }) {
 function LeaveTab({
   employeeId,
   employeeName,
-}: { employeeId: string; employeeName: string }) {
+  isAuthenticated,
+}: {
+  employeeId: string;
+  employeeName: string;
+  isAuthenticated: boolean;
+}) {
   const { data: leaves = [], isLoading } = useLeavesByEmployee(employeeId);
   const { data: employee } = useEmployee(employeeId);
   const submitLeave = useSubmitLeave();
@@ -429,6 +454,17 @@ function LeaveTab({
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {!isAuthenticated && (
+            <Alert className="mb-4 border-primary/30 bg-primary/5">
+              <Info className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-sm flex items-center justify-between gap-3 flex-wrap">
+                <span>
+                  Login with Internet Identity to submit leave requests.
+                </span>
+                <LeaveLoginButton />
+              </AlertDescription>
+            </Alert>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -483,7 +519,11 @@ function LeaveTab({
             <Button
               data-ocid="emp.leave_submit_button"
               type="submit"
-              disabled={submitLeave.isPending || (days > remaining && days > 0)}
+              disabled={
+                submitLeave.isPending ||
+                (days > remaining && days > 0) ||
+                !isAuthenticated
+              }
               className="w-full"
             >
               {submitLeave.isPending ? (
@@ -760,25 +800,122 @@ function PayslipTab({ employeeId }: { employeeId: string }) {
   );
 }
 
-// ─── No Employee Linked ───────────────────────────────────────────────────────
+// ─── Guest Lookup Form ────────────────────────────────────────────────────────
 
-function NoEmployeeLinked() {
+function GuestLookupForm({ onResolve }: { onResolve: (id: string) => void }) {
+  const { navigate } = useRouter();
+  const [guestEmployeeId, setGuestEmployeeId] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = guestEmployeeId.trim();
+    if (trimmed) {
+      onResolve(trimmed);
+    }
+  };
+
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <Card className="max-w-md w-full border border-border">
-        <CardContent className="p-8 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-yellow-50 flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-7 h-7 text-yellow-600" />
-          </div>
-          <h3 className="font-display text-lg font-bold text-foreground mb-2">
-            No Employee Profile Linked
-          </h3>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            Your account is not yet linked to an employee profile. Please
-            contact your HR administrator to set up your employee account.
-          </p>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen gradient-hero flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0)",
+            backgroundSize: "32px 32px",
+          }}
+        />
+      </div>
+      <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-20 left-20 w-72 h-72 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+
+      <div className="relative w-full max-w-md">
+        {/* Back to site */}
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="flex items-center gap-2 text-white/70 hover:text-white text-sm mb-6 transition-colors"
+        >
+          <X className="w-4 h-4" />
+          Back to website
+        </button>
+
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <img
+            src="/assets/uploads/Apex-HR-Solutions-logo-design-1.png"
+            alt="Apex HR Solutions"
+            className="h-14 w-auto object-contain brightness-0 invert"
+          />
+        </div>
+
+        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-xl">
+          <CardHeader className="text-center pb-2 pt-8 px-8">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <User className="w-7 h-7 text-primary" />
+            </div>
+            <CardTitle className="font-display text-2xl text-foreground">
+              Employee Self-Service Portal
+            </CardTitle>
+            <CardDescription className="text-base mt-1">
+              Enter your Employee ID to view your dashboard
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="px-8 pb-8 pt-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="guest-emp-id">Enter your Employee ID</Label>
+                <Input
+                  data-ocid="emp.guest_id_input"
+                  id="guest-emp-id"
+                  type="text"
+                  placeholder="e.g. EMP-001"
+                  value={guestEmployeeId}
+                  onChange={(e) => setGuestEmployeeId(e.target.value)}
+                  className="h-11"
+                  autoFocus
+                />
+              </div>
+              <Button
+                data-ocid="emp.guest_view_button"
+                type="submit"
+                disabled={!guestEmployeeId.trim()}
+                className="w-full h-11 text-base font-semibold shadow-md"
+              >
+                <FileText className="mr-2 w-4 h-4" />
+                View Dashboard
+              </Button>
+            </form>
+
+            <div className="relative my-6">
+              <Separator />
+              <span className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 top-1/2 bg-white px-3 text-xs text-muted-foreground">
+                or
+              </span>
+            </div>
+
+            <Button
+              data-ocid="emp.guest_login_button"
+              variant="outline"
+              className="w-full h-11"
+              onClick={() => navigate("/login")}
+            >
+              <LogIn className="mr-2 w-4 h-4" />
+              Login with Internet Identity
+            </Button>
+
+            <p className="text-xs text-center text-muted-foreground mt-4 leading-relaxed">
+              Login to unlock leave requests and full personalized access.
+            </p>
+          </CardContent>
+        </Card>
+
+        <p className="text-center text-white/50 text-xs mt-6">
+          © {new Date().getFullYear()} Apex HR Solutions · Secure Access
+        </p>
+      </div>
     </div>
   );
 }
@@ -787,11 +924,13 @@ function NoEmployeeLinked() {
 
 export default function EmployeeDashboard() {
   const { navigate } = useRouter();
-  const { logout, userProfile } = useAuth();
+  const { logout, userProfile, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [resolvedId, setResolvedId] = useState("");
 
-  const employeeId = userProfile?.employeeId ?? "";
+  // Auth-linked ID takes priority; otherwise use guest-entered ID
+  const employeeId = userProfile?.employeeId ?? resolvedId;
 
   const handleLogout = () => {
     logout();
@@ -815,25 +954,9 @@ export default function EmployeeDashboard() {
     },
   ];
 
-  // If no employee ID linked, show fallback
+  // If no employee ID yet, show guest lookup form
   if (!employeeId) {
-    return (
-      <div className="min-h-screen bg-background">
-        {/* Top bar */}
-        <header className="h-16 bg-white border-b border-border flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
-          <img
-            src="/assets/uploads/Apex-HR-Solutions-logo-design-1.png"
-            alt="Apex HR Solutions"
-            className="h-9 w-auto"
-          />
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
-        </header>
-        <NoEmployeeLinked />
-      </div>
-    );
+    return <GuestLookupForm onResolve={(id) => setResolvedId(id)} />;
   }
 
   return (
@@ -883,27 +1006,44 @@ export default function EmployeeDashboard() {
           </ul>
         </nav>
 
-        {/* User info + logout */}
+        {/* User info + logout/login */}
         <div className="p-4 border-t border-sidebar-border">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-white text-xs font-bold">
-              {(userProfile?.name ?? "E").slice(0, 2).toUpperCase()}
+              {isAuthenticated
+                ? (userProfile?.name ?? "E").slice(0, 2).toUpperCase()
+                : "G"}
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">
-                {userProfile?.name ?? "Employee"}
+                {isAuthenticated ? (userProfile?.name ?? "Employee") : "Guest"}
               </p>
-              <p className="text-xs text-sidebar-foreground/50">Employee</p>
+              <p className="text-xs text-sidebar-foreground/50">
+                {isAuthenticated ? "Employee" : "Guest Access"}
+              </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground transition-all"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
+          {isAuthenticated ? (
+            <button
+              type="button"
+              data-ocid="emp.logout_button"
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          ) : (
+            <button
+              type="button"
+              data-ocid="emp.login_button"
+              onClick={() => navigate("/login")}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground transition-all"
+            >
+              <LogIn className="w-4 h-4" />
+              Login
+            </button>
+          )}
         </div>
       </aside>
 
@@ -956,6 +1096,7 @@ export default function EmployeeDashboard() {
             <LeaveTab
               employeeId={employeeId}
               employeeName={userProfile?.name ?? "Employee"}
+              isAuthenticated={isAuthenticated}
             />
           )}
           {activeTab === "payslip" && <PayslipTab employeeId={employeeId} />}

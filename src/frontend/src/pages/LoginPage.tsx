@@ -8,12 +8,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import {
   AlertCircle,
   ArrowLeft,
   Building2,
+  Eye,
   Loader2,
   ShieldCheck,
   Users,
@@ -167,9 +169,25 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <p className="text-xs text-center text-muted-foreground mt-6 leading-relaxed">
-                  Internet Identity is a secure, anonymous authentication system
-                  for the Internet Computer. No passwords needed.
+                <div className="relative my-6">
+                  <Separator />
+                  <span className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 top-1/2 bg-white px-3 text-xs text-muted-foreground">
+                    or
+                  </span>
+                </div>
+
+                <Button
+                  data-ocid="login.guest_button"
+                  variant="outline"
+                  className="w-full h-11"
+                  onClick={() => navigate("/dashboard/employee")}
+                >
+                  <Eye className="mr-2 w-4 h-4" />
+                  Continue as Guest
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground mt-3 leading-relaxed">
+                  View your salary and payslip without logging in
                 </p>
               </>
             )}

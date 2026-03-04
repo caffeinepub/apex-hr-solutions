@@ -102,11 +102,7 @@ function Routes() {
     );
   }
   if (route === "/dashboard/employee") {
-    return (
-      <ProtectedRoute>
-        <EmployeeDashboard />
-      </ProtectedRoute>
-    );
+    return <EmployeeDashboard />;
   }
   return <PublicSite />;
 }
