@@ -33,9 +33,11 @@ import {
   Quote,
   Search,
   Shield,
+  ShieldCheck,
   Star,
   Target,
   TrendingUp,
+  Users,
   X,
 } from "lucide-react";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
@@ -406,6 +408,7 @@ function Navbar() {
 
 function HeroSection() {
   const [mounted, setMounted] = useState(false);
+  const { navigate } = useRouter();
 
   useEffect(() => {
     // Small delay so the initial paint settles before animations begin
@@ -502,6 +505,34 @@ function HeroSection() {
           >
             Explore Services
             <ChevronDown className="ml-2 w-4 h-4" />
+          </Button>
+        </AnimatedText>
+
+        {/* Portal Access Buttons */}
+        <AnimatedText
+          inView={mounted}
+          delay={500}
+          className="flex flex-col sm:flex-row gap-3 justify-center mt-4"
+        >
+          <Button
+            data-ocid="hero.employee_portal_button"
+            size="default"
+            variant="outline"
+            className="bg-white/10 border-white/40 border text-white/90 hover:bg-white/20 hover:border-white/60 hover:text-white px-6 h-11 text-sm font-medium transition-all duration-200 backdrop-blur-sm"
+            onClick={() => navigate("/portal/employee")}
+          >
+            <Users className="mr-2 w-4 h-4" />
+            Employee Portal
+          </Button>
+          <Button
+            data-ocid="hero.hr_portal_button"
+            size="default"
+            variant="outline"
+            className="bg-white/10 border-white/40 border text-white/90 hover:bg-white/20 hover:border-white/60 hover:text-white px-6 h-11 text-sm font-medium transition-all duration-200 backdrop-blur-sm"
+            onClick={() => navigate("/portal/hr")}
+          >
+            <ShieldCheck className="mr-2 w-4 h-4" />
+            HR Portal
           </Button>
         </AnimatedText>
 
