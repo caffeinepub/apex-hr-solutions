@@ -211,3 +211,25 @@
     display: none;
   }
 }
+
+/* Respect reduced-motion preference for scroll-triggered text animations */
+@media (prefers-reduced-motion: reduce) {
+  [style*="translateY"],
+  [style*="opacity"] {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
+/* Reviews marquee — right to left */
+@keyframes marquee-rtl {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="marquee-rtl"] {
+    animation: none !important;
+  }
+}
