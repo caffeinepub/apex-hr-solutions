@@ -200,6 +200,141 @@ function AnimatedStats() {
   );
 }
 
+// ─── Mobile Menu Overlay ─────────────────────────────────────────────────────
+
+const NAV_LINKS = [
+  { id: "home", label: "Home" },
+  { id: "about", label: "About" },
+  { id: "services", label: "Services" },
+  { id: "careers", label: "Careers" },
+  { id: "reviews", label: "Reviews" },
+  { id: "contact", label: "Contact" },
+];
+
+type NavRoute =
+  | "/"
+  | "/login"
+  | "/portal/hr"
+  | "/portal/employee"
+  | "/dashboard/hr"
+  | "/dashboard/employee";
+
+interface MobileMenuProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onScrollTo: (id: string) => void;
+  onNavigate: (path: NavRoute) => void;
+}
+
+function MobileMenu({
+  isOpen,
+  onClose,
+  onScrollTo,
+  onNavigate,
+}: MobileMenuProps) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <button
+        type="button"
+        aria-label="Close menu"
+        className="fixed inset-0 z-40 md:hidden cursor-default bg-black/40"
+        style={{
+          opacity: isOpen ? 1 : 0,
+          pointerEvents: isOpen ? "auto" : "none",
+          transition: "opacity 200ms ease",
+          border: "none",
+          outline: "none",
+        }}
+        onClick={onClose}
+        tabIndex={isOpen ? 0 : -1}
+      />
+
+      {/* Slide-down panel */}
+      <div
+        id="mobile-menu"
+        aria-label="Navigation menu"
+        className="fixed top-16 left-0 right-0 z-50 md:hidden bg-white border-b border-border shadow-lg"
+        style={{
+          opacity: isOpen ? 1 : 0,
+          transform: isOpen ? "translateY(0)" : "translateY(-8px)",
+          pointerEvents: isOpen ? "auto" : "none",
+          transition: "opacity 200ms ease, transform 200ms ease",
+        }}
+      >
+        {/* Nav links */}
+        <nav className="px-4 py-3 flex flex-col">
+          {NAV_LINKS.map((link) => (
+            <button
+              key={link.id}
+              type="button"
+              data-ocid={`nav.${link.id}_link`}
+              onClick={() => onScrollTo(link.id)}
+              className="w-full px-3 py-3 text-left text-sm font-medium text-foreground hover:bg-muted rounded-md transition-colors"
+            >
+              {link.label}
+            </button>
+          ))}
+        </nav>
+
+        <Separator />
+
+        {/* Portal buttons */}
+        <div className="px-4 py-3 flex flex-col gap-2">
+          <Button
+            variant="outline"
+            data-ocid="nav.employee_portal_button"
+            onClick={() => {
+              onNavigate("/portal/employee");
+              onClose();
+            }}
+            className="w-full justify-center gap-2"
+          >
+            <Users className="w-4 h-4" />
+            Employee Portal
+          </Button>
+          <Button
+            data-ocid="nav.hr_portal_button"
+            onClick={() => {
+              onNavigate("/portal/hr");
+              onClose();
+            }}
+            className="w-full justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            <Shield className="w-4 h-4" />
+            HR Portal
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Hamburger Icon ───────────────────────────────────────────────────────────
+
+function HamburgerIcon({
+  isOpen,
+  scrolled,
+}: { isOpen: boolean; scrolled: boolean }) {
+  const color = scrolled ? "text-foreground" : "text-white";
+  return isOpen ? (
+    <X className={`w-5 h-5 ${color}`} />
+  ) : (
+    <Menu className={`w-5 h-5 ${color}`} />
+  );
+}
+
 // ─── Nav ─────────────────────────────────────────────────────────────────────
 
 function Navbar() {
@@ -213,194 +348,104 @@ function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Close menu on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && menuOpen) setMenuOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [menuOpen]);
+
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMenuOpen(false);
   };
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-border"
-          : "bg-transparent"
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <img
-              src="/assets/uploads/Apex-HR-Solutions-logo-design-1.png"
-              alt="Apex HR Solutions"
-              className={`h-10 md:h-12 w-auto object-contain transition-all ${!scrolled ? "brightness-0 invert" : ""}`}
-            />
-          </div>
+    <>
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-border"
+            : "bg-transparent"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 md:h-20">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <img
+                src="/assets/uploads/Apex-HR-Solutions-logo-design-1.png"
+                alt="Apex HR Solutions"
+                className={`h-10 md:h-12 w-auto object-contain transition-all ${!scrolled ? "brightness-0 invert" : ""}`}
+              />
+            </div>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
-            <button
-              type="button"
-              data-ocid="nav.home_link"
-              onClick={() => scrollTo("home")}
-              className={`text-sm font-medium transition-colors hover:text-primary ${scrolled ? "text-foreground" : "text-white"}`}
-            >
-              Home
-            </button>
-            <button
-              type="button"
-              data-ocid="nav.about_link"
-              onClick={() => scrollTo("about")}
-              className={`text-sm font-medium transition-colors hover:text-primary ${scrolled ? "text-foreground" : "text-white"}`}
-            >
-              About
-            </button>
-            <button
-              type="button"
-              data-ocid="nav.services_link"
-              onClick={() => scrollTo("services")}
-              className={`text-sm font-medium transition-colors hover:text-primary ${scrolled ? "text-foreground" : "text-white"}`}
-            >
-              Services
-            </button>
-            <button
-              type="button"
-              data-ocid="nav.careers_link"
-              onClick={() => scrollTo("careers")}
-              className={`text-sm font-medium transition-colors hover:text-primary ${scrolled ? "text-foreground" : "text-white"}`}
-            >
-              Careers
-            </button>
-            <button
-              type="button"
-              data-ocid="nav.reviews_link"
-              onClick={() => scrollTo("reviews")}
-              className={`text-sm font-medium transition-colors hover:text-primary ${scrolled ? "text-foreground" : "text-white"}`}
-            >
-              Reviews
-            </button>
-            <button
-              type="button"
-              data-ocid="nav.contact_link"
-              onClick={() => scrollTo("contact")}
-              className={`text-sm font-medium transition-colors hover:text-primary ${scrolled ? "text-foreground" : "text-white"}`}
-            >
-              Contact
-            </button>
-          </nav>
+            {/* Desktop Nav */}
+            <nav className="hidden md:flex items-center gap-8">
+              {NAV_LINKS.map((link) => (
+                <button
+                  key={link.id}
+                  type="button"
+                  data-ocid={`nav.${link.id}_link`}
+                  onClick={() => scrollTo(link.id)}
+                  className={`text-sm font-medium transition-colors hover:text-primary ${scrolled ? "text-foreground" : "text-white"}`}
+                >
+                  {link.label}
+                </button>
+              ))}
+            </nav>
 
-          {/* Portal Buttons */}
-          <div className="hidden md:flex items-center gap-2">
-            <Button
-              data-ocid="nav.employee_portal_button"
-              variant="outline"
-              onClick={() => navigate("/portal/employee")}
-              className={`px-4 text-sm font-medium transition-all ${
-                scrolled
-                  ? "border-primary/40 text-primary hover:bg-primary/5"
-                  : "border-white/50 text-white hover:bg-white/10 hover:border-white"
+            {/* Portal Buttons */}
+            <div className="hidden md:flex items-center gap-2">
+              <Button
+                data-ocid="nav.employee_portal_button"
+                variant="outline"
+                onClick={() => navigate("/portal/employee")}
+                className={`px-4 text-sm font-medium transition-all ${
+                  scrolled
+                    ? "border-primary/40 text-primary hover:bg-primary/5"
+                    : "border-white/50 text-white hover:bg-white/10 hover:border-white"
+                }`}
+              >
+                Employee Portal
+              </Button>
+              <Button
+                data-ocid="nav.hr_portal_button"
+                onClick={() => navigate("/portal/hr")}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md px-4 text-sm"
+              >
+                HR Portal
+              </Button>
+            </div>
+
+            {/* Mobile hamburger */}
+            <button
+              type="button"
+              className={`md:hidden relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                scrolled ? "hover:bg-muted" : "hover:bg-white/10"
               }`}
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-menu"
+              data-ocid="nav.toggle"
             >
-              Employee Portal
-            </Button>
-            <Button
-              data-ocid="nav.hr_portal_button"
-              onClick={() => navigate("/portal/hr")}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md px-4 text-sm"
-            >
-              HR Portal
-            </Button>
+              <HamburgerIcon isOpen={menuOpen} scrolled={scrolled} />
+            </button>
           </div>
-
-          {/* Mobile hamburger */}
-          <button
-            type="button"
-            className="md:hidden p-2 rounded-md"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-          >
-            {menuOpen ? (
-              <X
-                className={`w-5 h-5 ${scrolled ? "text-foreground" : "text-white"}`}
-              />
-            ) : (
-              <Menu
-                className={`w-5 h-5 ${scrolled ? "text-foreground" : "text-white"}`}
-              />
-            )}
-          </button>
         </div>
+      </header>
 
-        {/* Mobile Menu */}
-        {menuOpen && (
-          <div className="md:hidden bg-white border-t border-border py-4 px-4 flex flex-col gap-3">
-            <button
-              type="button"
-              onClick={() => scrollTo("home")}
-              className="text-sm font-medium text-foreground py-2 text-left"
-              data-ocid="nav.home_link"
-            >
-              Home
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollTo("about")}
-              className="text-sm font-medium text-foreground py-2 text-left"
-              data-ocid="nav.about_link"
-            >
-              About
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollTo("services")}
-              className="text-sm font-medium text-foreground py-2 text-left"
-              data-ocid="nav.services_link"
-            >
-              Services
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollTo("careers")}
-              className="text-sm font-medium text-foreground py-2 text-left"
-              data-ocid="nav.careers_link"
-            >
-              Careers
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollTo("reviews")}
-              className="text-sm font-medium text-foreground py-2 text-left"
-              data-ocid="nav.reviews_link"
-            >
-              Reviews
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollTo("contact")}
-              className="text-sm font-medium text-foreground py-2 text-left"
-              data-ocid="nav.contact_link"
-            >
-              Contact
-            </button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/portal/employee")}
-              className="w-full mt-2 border-primary/40 text-primary hover:bg-primary/5"
-              data-ocid="nav.employee_portal_button"
-            >
-              Employee Portal
-            </Button>
-            <Button
-              onClick={() => navigate("/portal/hr")}
-              className="w-full"
-              data-ocid="nav.hr_portal_button"
-            >
-              HR Portal
-            </Button>
-          </div>
-        )}
-      </div>
-    </header>
+      {/* Mobile drawer (rendered outside header for correct stacking) */}
+      <MobileMenu
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onScrollTo={scrollTo}
+        onNavigate={navigate}
+      />
+    </>
   );
 }
 
@@ -408,7 +453,6 @@ function Navbar() {
 
 function HeroSection() {
   const [mounted, setMounted] = useState(false);
-  const { navigate } = useRouter();
 
   useEffect(() => {
     // Small delay so the initial paint settles before animations begin
@@ -505,34 +549,6 @@ function HeroSection() {
           >
             Explore Services
             <ChevronDown className="ml-2 w-4 h-4" />
-          </Button>
-        </AnimatedText>
-
-        {/* Portal Access Buttons */}
-        <AnimatedText
-          inView={mounted}
-          delay={500}
-          className="flex flex-col sm:flex-row gap-3 justify-center mt-4"
-        >
-          <Button
-            data-ocid="hero.employee_portal_button"
-            size="default"
-            variant="outline"
-            className="bg-white/10 border-white/40 border text-white/90 hover:bg-white/20 hover:border-white/60 hover:text-white px-6 h-11 text-sm font-medium transition-all duration-200 backdrop-blur-sm"
-            onClick={() => navigate("/portal/employee")}
-          >
-            <Users className="mr-2 w-4 h-4" />
-            Employee Portal
-          </Button>
-          <Button
-            data-ocid="hero.hr_portal_button"
-            size="default"
-            variant="outline"
-            className="bg-white/10 border-white/40 border text-white/90 hover:bg-white/20 hover:border-white/60 hover:text-white px-6 h-11 text-sm font-medium transition-all duration-200 backdrop-blur-sm"
-            onClick={() => navigate("/portal/hr")}
-          >
-            <ShieldCheck className="mr-2 w-4 h-4" />
-            HR Portal
           </Button>
         </AnimatedText>
 

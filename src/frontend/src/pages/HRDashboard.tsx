@@ -1058,7 +1058,7 @@ export default function HRDashboard() {
   const { navigate } = useRouter();
   const { logout, userProfile, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Lifted state for cross-tab "Add Employee" action from Overview
   const [employeeDialogOpen, setEmployeeDialogOpen] = useState(false);
@@ -1103,57 +1103,126 @@ export default function HRDashboard() {
     },
   ];
 
+  const handleNavClick = (tabId: string) => {
+    setActiveTab(tabId);
+    setDrawerOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-[oklch(var(--sidebar))] text-sidebar-foreground flex flex-col
-          transition-transform duration-300
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-        `}
-      >
-        {/* Logo */}
-        <div className="p-5 border-b border-sidebar-border">
-          <img
-            src="/assets/uploads/Apex-HR-Solutions-logo-design-1.png"
-            alt="Apex HR Solutions"
-            className="h-10 w-auto object-contain brightness-0 invert"
-          />
-          <p className="text-sidebar-foreground/50 text-xs mt-1.5">
-            HR Admin Portal
-          </p>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* ── Top Header (always full width, clean & minimal) ─────────── */}
+      <header className="h-16 bg-white border-b border-border flex items-center justify-between px-4 md:px-6 sticky top-0 z-20 shadow-sm">
+        <div className="flex items-center gap-3">
+          {/* Hamburger — always visible on all screen sizes */}
+          <button
+            type="button"
+            data-ocid="hr.hamburger_button"
+            className="p-2 rounded-md hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            onClick={() => setDrawerOpen(!drawerOpen)}
+            aria-label="Toggle navigation menu"
+            aria-expanded={drawerOpen}
+          >
+            <Menu className="w-5 h-5 text-foreground" />
+          </button>
+
+          <div>
+            <h1 className="font-display text-lg font-bold text-foreground leading-none">
+              {navItems.find((n) => n.id === activeTab)?.label ?? "Dashboard"}
+            </h1>
+            <p className="text-xs text-muted-foreground hidden sm:block">
+              HR Administration Portal
+            </p>
+          </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 py-4 px-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 hidden sm:inline-flex">
+            HR Admin
+          </Badge>
+          <Button
+            data-ocid="hr.exit_button"
+            variant="outline"
+            size="sm"
+            className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+            onClick={() => navigate("/")}
+          >
+            <LogOut className="w-4 h-4 mr-1.5" />
+            Exit
+          </Button>
+        </div>
+      </header>
+
+      {/* ── Navigation Drawer (overlay, slide-in from left) ──────────── */}
+      {/* Backdrop */}
+      {drawerOpen && (
+        <button
+          type="button"
+          aria-label="Close navigation menu"
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm w-full h-full border-0 p-0 cursor-default"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
+
+      {/* Drawer panel */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-[280px] bg-[oklch(var(--sidebar))] text-sidebar-foreground flex flex-col shadow-2xl
+          transition-transform duration-300 ease-in-out
+          ${drawerOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
+        aria-hidden={!drawerOpen}
+      >
+        {/* Drawer header: logo + close button */}
+        <div className="p-5 border-b border-sidebar-border flex items-start justify-between">
+          <div>
+            <img
+              src="/assets/uploads/Apex-HR-Solutions-logo-design-1.png"
+              alt="Apex HR Solutions"
+              className="h-10 w-auto object-contain brightness-0 invert"
+            />
+            <p className="text-sidebar-foreground/50 text-xs mt-1.5">
+              HR Admin Portal
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Close navigation menu"
+            className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/40 transition-colors mt-0.5"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Nav items */}
+        <nav className="flex-1 py-4 px-3 overflow-y-auto">
           <ul className="space-y-1">
             {navItems.map((item) => (
               <li key={item.id}>
                 <button
                   type="button"
                   data-ocid={item.ocid}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setSidebarOpen(false);
-                  }}
+                  onClick={() => handleNavClick(item.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                     activeTab === item.id
-                      ? "bg-sidebar-accent text-white"
+                      ? "bg-sidebar-accent text-white shadow-sm"
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                   }`}
                 >
                   <item.icon className="w-4 h-4 flex-shrink-0" />
                   {item.label}
+                  {activeTab === item.id && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />
+                  )}
                 </button>
               </li>
             ))}
           </ul>
         </nav>
 
-        {/* User info + logout */}
+        {/* User info + logout at bottom of drawer */}
         <div className="p-4 border-t border-sidebar-border">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-white text-xs font-bold">
+            <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
               {(userProfile?.name ?? "HR").slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
@@ -1178,79 +1247,25 @@ export default function HRDashboard() {
         </div>
       </aside>
 
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <button
-          type="button"
-          aria-label="Close sidebar"
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden w-full h-full border-0 p-0 cursor-default"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Main content */}
-      <div className="flex-1 lg:ml-64 min-h-screen flex flex-col">
-        {/* Top bar */}
-        <header className="h-16 bg-white border-b border-border flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="lg:hidden p-2 rounded-md hover:bg-muted"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              aria-label="Toggle sidebar"
-            >
-              {sidebarOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
-            </button>
-            <div>
-              <h1 className="font-display text-lg font-bold text-foreground leading-none">
-                {navItems.find((n) => n.id === activeTab)?.label ?? "Dashboard"}
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                HR Administration Portal
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
-              HR Admin
-            </Badge>
-            <Button
-              data-ocid="hr.exit_button"
-              variant="outline"
-              size="sm"
-              className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
-              onClick={() => navigate("/")}
-            >
-              <LogOut className="w-4 h-4 mr-1.5" />
-              Exit
-            </Button>
-          </div>
-        </header>
-
-        {/* Tab Content */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
-          {activeTab === "overview" && (
-            <OverviewTab onAddEmployee={handleAddEmployeeFromOverview} />
-          )}
-          {activeTab === "employees" && (
-            <EmployeesTab
-              externalDialogOpen={employeeDialogOpen}
-              externalEditEmployee={editingEmployee}
-              onExternalDialogClose={() => {
-                setEmployeeDialogOpen(false);
-                setEditingEmployee(null);
-              }}
-            />
-          )}
-          {activeTab === "leaves" && <LeaveManagementTab />}
-          {activeTab === "salary" && <SalaryTab />}
-          {activeTab === "contacts" && <ContactSubmissionsTab />}
-        </main>
-      </div>
+      {/* ── Main Content (full width, no left offset) ─────────────────── */}
+      <main className="flex-1 p-4 md:p-6 lg:p-8">
+        {activeTab === "overview" && (
+          <OverviewTab onAddEmployee={handleAddEmployeeFromOverview} />
+        )}
+        {activeTab === "employees" && (
+          <EmployeesTab
+            externalDialogOpen={employeeDialogOpen}
+            externalEditEmployee={editingEmployee}
+            onExternalDialogClose={() => {
+              setEmployeeDialogOpen(false);
+              setEditingEmployee(null);
+            }}
+          />
+        )}
+        {activeTab === "leaves" && <LeaveManagementTab />}
+        {activeTab === "salary" && <SalaryTab />}
+        {activeTab === "contacts" && <ContactSubmissionsTab />}
+      </main>
     </div>
   );
 }

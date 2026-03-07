@@ -222,6 +222,11 @@
   }
 }
 
+/* Mobile menu drawer — prevent scroll bleed-through */
+.mobile-menu-open {
+  overflow: hidden;
+}
+
 /* Reviews marquee — right to left */
 @keyframes marquee-rtl {
   0%   { transform: translateX(0); }
